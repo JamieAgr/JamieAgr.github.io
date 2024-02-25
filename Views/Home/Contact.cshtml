@@ -1,0 +1,121 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="~/css/style.css">
+    <script src="https://www.google.com/recaptcha/api.js?render=6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="~/js/FormFeedback.js"></script>
+</head>
+<body>
+    <h2 style="text-align: start; margin-left:10px;">Stuur mij een bericht</h2>
+    <div class="contact">
+        <!-- Spinner -->
+        <div class="loader-container" id="loaderContainer">
+            <div class="loader hide" id="loader"></div>
+        </div>
+
+        <form id="contactForm" action="Form" method="post" onsubmit="submitForm(event)">
+            <div class="elem-group">
+                <input placeholder="Je voornaam" type="text" id="FirstName" name="FirstName" maxlength="60" required>
+                <div id="firstname-error" class="error-message"></div>
+            </div>
+            <div class="elem-group">
+                <input placeholder="Je achternaam" type="text" id="LastName" name="LastName" maxlength="60" required>
+                <div id="lastname-error" class="error-message"></div>
+            </div>
+            <div class="elem-group">
+                <input placeholder="Je email" type="email" id="Email" name="Email" maxlength="80" required>
+                <div id="email-error" class="error-message"></div>
+            </div>
+            <div class="elem-group">
+                <input placeholder="Je telefoonnummer" type="tel" id="Phonenumber" name="Phonenumber" pattern="[0-9]{10}" required>
+            </div>
+
+            <!-- ReCAPTCHA container -->
+            <div id="recaptchaContainer"></div>
+
+            <!-- Submit button -->
+            <button type="submit" id="submitButton" disabled>Stuur Email</button>
+
+            <input type="hidden" id="formActionUrl" value="@Url.Action("Form", "Home")" />
+            <input type="hidden" name="csrfToken" id="csrf_token" value="@ViewBag.CsrfToken">
+
+
+        </form>
+
+    </div>
+
+    <script>
+        // Initialize reCAPTCHA
+        function initializeRecaptcha() {
+            grecaptcha.ready(function () {
+                grecaptcha.execute('6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI', { action: 'submit' }).then(function (token) {
+                    // Add the reCAPTCHA token to the form data
+                    document.getElementById("contactForm").insertAdjacentHTML('beforeend', '<input type="hidden" name="g-recaptcha-response" value="' + token + '">');
+                    // Enable the submit button
+                    document.getElementById("submitButton").disabled = false;
+                });
+            });
+        }
+
+        // Call initializeRecaptcha function when the page is loaded
+        document.addEventListener("DOMContentLoaded", function () {
+            initializeRecaptcha();
+        });
+
+        // Handle form submission
+        function submitForm(event) {
+            event.preventDefault(); // Prevent the form from submitting normally
+
+            // Show the loader
+            document.getElementById("loader").classList.remove("hide");
+
+            // Get the form data
+            var formData = new FormData(document.getElementById("contactForm"));
+
+            // Send the form data asynchronously using fetch
+            fetch(document.getElementById("formActionUrl").value, {
+                method: "POST",
+                body: formData
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response.text();
+                    } else {
+                        throw new Error("Failed to send email");
+                    }
+                })
+                .then(data => {
+                    // Handle successful response
+                    document.getElementById("contactForm").reset();
+                    document.getElementById("loader").classList.add("hide");
+                    Swal.fire({
+                        icon: "success",
+                        title: "Success!",
+                        text: data, // Display the response from the server
+                        confirmButtonColor: "#3085d6",
+                        confirmButtonText: "OK"
+                    });
+                })
+                .catch(error => {
+                    // Handle error
+                    document.getElementById("loader").classList.add("hide");
+                    let errorMessage = "An error occurred";
+                    if (error.response) {
+                        errorMessage = error.response.data;
+                    }
+                    Swal.fire({
+                        icon: "error",
+                        title: "Error!",
+                        text: errorMessage, // Display the error message
+                        confirmButtonColor: "#d33",
+                        confirmButtonText: "OK"
+                    });
+                    console.error(error); // You can handle the error here
+                });
+        }
+    </script>
+</body>
+</html>
